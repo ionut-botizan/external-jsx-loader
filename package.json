@@ -1,0 +1,31 @@
+{
+  "name": "external-jsx-loader",
+  "version": "1.0.0",
+  "description": "A webpack loader to be used with standalone JSX files, in order to separate the component's logic from its template.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ionut-botizan/external-jsx-loader.git"
+  },
+  "keywords": [
+    "external",
+    "jsx",
+    "webpack",
+    "loader"
+  ],
+  "author": {
+    "email": "dev@ionut-botizan.net",
+    "name": "Ionuț Botizan"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "babylon": "^6.7.0"
+  },
+  "bugs": {
+    "url": "https://github.com/ionut-botizan/external-jsx-loader/issues"
+  },
+  "homepage": "https://github.com/ionut-botizan/external-jsx-loader#readme"
+}
