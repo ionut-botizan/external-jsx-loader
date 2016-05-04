@@ -15,11 +15,13 @@ npm i -D external-jsx-loader
 ---
 
 ## Usage
-1. Create your component's class same as before
-2. Move the JSX tags from the `render()` method to a new file (Eg. `new-file.tpl.jsx`)
-3. Require the new file (Eg. `const view = require('./new-file.tpl.jsx');`)
+1. Create your component same as before (Eg. `my-component.js`)
+2. Move the code (including the JSX tags) from the `render()` method to a new file (Eg. `my-component.jsx`)
+3. In your component's definition file, require the JSX file (Eg. `const view = require('./my-component.jsx');`)
 4. In the `render()` method, `return view(this);`
 5. Configure webpack to use the `external-jsx` loader for the template files, based on the file extension you chose for your templates
+
+*(See the sample "Hello World!" app in the `demo` folder)*
 
 ---
 
@@ -29,11 +31,11 @@ The easiest way is to configure it as a pre-loader:
 {
 	module: {
 		preLoaders: [
-			{test: /\.tpl\.jsx$/, loader: 'external-jsx', exclude: /node_modules/}
+			{test: /\.jsx$/, loader: 'external-jsx' /*...*/}
 		],
 
 		loaders: [
-			{test: /\.jsx$/, loader: 'babel', exclude: /node_modules/}
+			{test: /\.jsx?$/, loader: 'babel' /*...*/}
 		]
 	}
 }
@@ -43,7 +45,8 @@ But you can configure it as a loader too:
 {
 	module: {
 		loaders: [
-			{test: /\.tpl\.jsx$/, loader: 'babel!external-js', exclude: /node_modules/}
+			{test: /\.jsx$/, loader: 'babel!external-jsx' /*...*/},
+			{test: /\.js$/,  loader: 'babel' /*...*/}
 		]
 	}
 }
@@ -53,10 +56,10 @@ Either way, you have to make sure the loader is executed **before** the `babel` 
 ---
 
 ## Example
-**File:** *MyComponent.jsx*
+**File:** *my-component.js*
 ```js
 const React = require('react');
-const view  = require('./MyComponent.tpl.jsx'); // require the template
+const view  = require('./my-component.jsx'); // require the template
 
 class MyComponent extends React.Component {
 	constructor(props) {
@@ -83,7 +86,7 @@ class MyComponent extends React.Component {
 module.exports = MyComponent;
 ```
 
-**File:** *MyComponent.tpl.jsx*
+**File:** *my-component.jsx*
 ```jsx
 <div>
 	<h1>Hello!</h1>
