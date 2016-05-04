@@ -1,11 +1,41 @@
-var Babylon = require('babylon');
+/**
+ * This source code is licensed under the MIT License found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * Copyright (c) 2016 Ionuț Botizan
+ */
 
+"use strict";
+
+const Tokenizer  = require('babylon');
+const TokenTypes = {
+	TagStart : Tokenizer.tokTypes.jsxTagStart,
+	TagEnd   : Tokenizer.tokTypes.jsxTagEnd,
+	TagClose : Tokenizer.tokTypes.slash,
+	TagName  : Tokenizer.tokTypes.jsxName
+};
+
+/**
+ * The way this module works is:
+ * - find the view's node tree starting position
+ *
+ * - split the source code in two parts: the view's logic (external
+ *   dependencies, variables definitions, etc.) and the actual view (the JSX
+ *   node tree)
+ *
+ * - build a function that executes the logic part and returns the view
+ *
+ * - build a module that exports a function which, when executed, returns the
+ *   result of executing the previously built function in a custom context.
+ *   This context is provided in the render method of the React component being
+ *   rendered and is usually the component's instance (so you can use the `this`
+ *   keyword in your views).
+ */
 module.exports = function(content) {
-	var index = findViewStart(content);
-	var logic = content.substr(0, index);
-	var view  = content.substr(index);
-
-	var source = `
+	const index  = getViewRoot(content);
+	const logic  = content.substr(0, index);
+	const view   = content.substr(index);
+	const source = `
 		module.exports = function(context) {
 			return (function() {
 				${logic}
@@ -26,29 +56,46 @@ module.exports = function(content) {
 	return source;
 }
 
-function findViewStart(content) {
-	var tagName;
-	var token;
-	var tokens = Babylon.parse(content, {plugins: ['jsx']}).tokens;
-	var position = tokens.length;
-	var depth = 0;
+/**
+ * Parse the view's source code and return an array of tokens
+ */
+function parse(source) {
+	return Tokenizer.parse(source, {
+		plugins: ['jsx']
+	}).tokens;
+}
 
+/**
+ * Finds the position of the opening JSX tag in the source code.
+ */
+function getViewRoot(source) {
+	const tokens = parse(source);
+
+	let position = tokens.length;
+	let tagDepth = 0;
+	let tagName;
+	let token;
+
+	/**
+	 * Loop backwards through the view's source and find the last closing tag
+	 * and its matching opening tag to determine the view's root node position.
+	 */
 	while (token = tokens[--position]) {
-		if (token.type.label !== 'jsxTagStart') {
+		if (token.type !== TokenTypes.TagStart) {
 			continue;
 		}
 
-		var tag = parseTag(position, tokens);
+		let tag = parseTag(position, tokens);
 
 		// the last node in the source is a self-closing tag; use that
 		if (!tagName && tag.self) {
 			break;
 		}
 
-		// this is the last tag in the source; remember the name and find its pair
+		// this is the last tag in the source; save the name and find its pair
 		if (!tagName) {
 			tagName = tag.name;
-			depth++;
+			tagDepth++;
 			continue;
 		}
 
@@ -57,18 +104,18 @@ function findViewStart(content) {
 			continue;
 		}
 
-		// increase depth for closing tags
+		// increase tags' depth in the tree for closing tags
 		if (!tag.open) {
-			depth++;
+			tagDepth++;
 		}
 
-		// decrease depth for opening (not self-closing) tags
+		// decrease tags' depth in the tree for opening (not self-closing) tags
 		if (tag.open && !tag.self) {
-			depth--;
+			tagDepth--;
 		}
 
-		// if depth reached 0, this must be the opening tag
-		if (depth === 0) {
+		// if the tag's depth reached 0, it means this is the opening tag
+		if (tagDepth === 0) {
 			break;
 		}
 	}
@@ -78,9 +125,13 @@ function findViewStart(content) {
 	return token ? token.start : 0;
 }
 
+/**
+ * Parses the name and type (opening, closing, self-closing) of a tag
+ * at a given position in a set of tokens.
+ */
 function parseTag(position, tokens) {
-	var token;
-	var tag = {
+	let token;
+	let tag = {
 		name : null,
 		self : false,
 		open : true
@@ -88,18 +139,18 @@ function parseTag(position, tokens) {
 
 	while (token = tokens[position++]) {
 		// tag's end found so parsing must stop
-		if (token.type.label === 'jsxTagEnd') {
+		if (token.type === TokenTypes.TagEnd) {
 			break;
 		}
 
 		// save the tag's name and continue parsing
-		if (!tag.name && token.type.label === 'jsxName') {
+		if (!tag.name && token.type === TokenTypes.TagName) {
 			tag.name = token.value;
 			continue;
 		}
 
 		// if a "/" is found after the tag's name, then it's a self-closing tag
-		if (token.type.label === '/') {
+		if (token.type === TokenTypes.TagClose) {
 			tag.self = tag.open = !!tag.name;
 		}
 	}
