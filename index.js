@@ -35,14 +35,17 @@ module.exports = function(content) {
 	const index  = getViewRoot(content);
 	const logic  = content.substr(0, index);
 	const view   = content.substr(index);
+	const config = getConfig(this.query);
 	const source = `
 		module.exports = function(context) {
 			return (function() {
 				${logic}
 
-				if (!React) {
-					var React = require("react");
-				}
+				${!config.globalReact ? (
+					`if (!React) {
+						var React = require("react");
+					}`
+				):''}
 
 				return (
 					${view}
@@ -54,6 +57,25 @@ module.exports = function(content) {
 	this.cacheable && this.cacheable();
 
 	return source;
+}
+
+/**
+ * Get the loader configuration (query) as an object
+ */
+function getConfig(query) {
+	let config = query;
+
+	if (typeof config === 'string') {
+		try {
+			config = JSON.parse(config.replace(/^\?/, ''));
+		} catch(ex) {}
+	}
+
+	if (typeof config !== 'object') {
+		config = {};
+	}
+
+	return config;
 }
 
 /**
