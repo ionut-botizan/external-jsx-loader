@@ -1,6 +1,6 @@
 {
   "name": "external-jsx-loader",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A webpack loader to be used with standalone JSX files, in order to separate the component's logic from its template.",
   "main": "index.js",
   "scripts": {
